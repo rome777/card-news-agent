@@ -1,0 +1,14 @@
+[project]
+name = "cardnews"
+version = "0.1.0"
+description = "사용자와 함께 만드는 카드뉴스 에이전트"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "pillow>=13.0.0",
+    "playwright>=1.64.1",
+    "uvicorn>=0.29",
+]
+
+[tool.uv]
+package = false

@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+
+# 앱이 만든 결과(내 PC 경로·실행 기록이 들어 있음)와 비밀값
+data/
+.env
+
+# 강의 키트 원본 파일. 원래 저장소에 라이선스 표시가 없어 다시 배포하지 않고 링크로 대신한다.
+# https://github.com/SunCreation/agent-building-practice/tree/v5.0.0/card-news-workflow-kit
+ACCEPTANCE.md
+ENGINE_GUIDE.md
+EXAMPLE_RUN.md
+REFERENCES.md
+assets/
