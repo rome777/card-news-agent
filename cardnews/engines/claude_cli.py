@@ -18,6 +18,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from ..links import dead_links
 from . import Emit, EngineError, Outcome
 
 WEB_TOOLS = "WebSearch,WebFetch"
@@ -151,6 +152,7 @@ NO_OUTLET_RULE = (
 COMMON_RULES = """공통 규칙
 - 모든 설명은 한국어로 쓴다. 원문 제목은 원어 그대로 둔다.
 - 출처는 공신력 있는 곳을 우선한다: 통신사(AFP·Reuters·AP 등), 주요 언론, 정부·경찰·노조·단체의 공식 발표. 출처가 불분명한 블로그·콘텐츠 농장·집계 사이트는 핵심 사실의 근거로 쓰지 않는다.
+- URL은 검색 결과나 직접 연 페이지에 나온 주소만 그대로 쓴다. 기억으로 주소를 만들거나 고쳐 쓰지 않는다(서버가 모든 주소를 열어 보고, 열리지 않는 주소와 그 주소뿐인 후보는 뺀다).
 - 확인하지 못한 것은 추측해서 채우지 않는다. 날짜는 확인한 것만 YYYY-MM-DD로 쓰고, 모르면 null로 둔다.
 - 기사 제목만으로 사실을 확정하지 않는다. 발표 주체(정부·단체·기업)의 주장을 독립적으로 확인된 사실처럼 쓰지 않는다. 예정된 일을 이미 일어난 일로 쓰지 않는다.
 - 수치(참가자·체포자·부상자 수 등)는 누가 발표한 숫자인지와 날짜를 함께 적는다.
@@ -232,7 +234,14 @@ class ClaudeCliEngine:
                 "엔진이 실제 웹 검색을 한 번도 하지 않아 결과를 받아들이지 않았습니다.",
                 "‘다시 시도’를 누르세요.",
             )
-        return Outcome("result", _normalize_research(data, task, start, end, now, out["fetched"]), out["session_id"])
+        cands = data["candidates"]
+        dead = dead_links([c["url"] for c in cands] + [u for c in cands for u in c.get("related_urls") or []], cancel)
+        data["candidates"], broken = _drop_dead_candidates(cands, dead)
+        if dead:
+            emit(f"주소 확인: 열리지 않는 주소 {len(dead)}개를 빼고, 살아 있는 주소가 없는 후보 {len(broken)}개를 뺌")
+        result = _normalize_research(data, task, start, end, now, out["fetched"])
+        result["dead_link_excluded"] = broken
+        return Outcome("result", result, out["session_id"])
 
     def _deep_research(self, task: dict[str, Any], session_id: str | None, emit: Emit, cancel: threading.Event) -> Outcome:
         answers = task["answers"]
@@ -282,6 +291,14 @@ class ClaudeCliEngine:
             raise EngineError("invalid_output", "엔진 결과에 편집 방향이 비어 있습니다.", "‘다시 시도’를 누르세요.")
         # 앞선 호출(넓은 조사)에서 직접 읽은 원문도 원문 확인으로 친다
         read = out["fetched"] | {_norm_url(u) for u in task.get("read_urls", [])}
+        notes = [n for group in result.get("notes", {}).values() if isinstance(group, list) for n in group if isinstance(n, dict)]
+        dead = dead_links([s["url"] for s in result["sources"]] + [n.get("source_url") or "" for n in notes], cancel)
+        if dead:
+            emit(f"주소 확인: 열리지 않는 근거 주소 {len(dead)}개를 뺌")
+            result["sources"] = [s for s in result["sources"] if s["url"] not in dead]
+            for n in notes:
+                if n.get("source_url") in dead:
+                    n["source_url"] = None
         for source in result["sources"]:
             source["read_original"] = _was_read(source["url"], read)
         return Outcome("result", result, out["session_id"])
@@ -328,8 +345,12 @@ class ClaudeCliEngine:
             raise EngineError("invalid_output", f"스토리보드 카드 수가 {len(data['cards'])}장이라 받아들이지 않았습니다.", "‘다시 시도’를 누르세요.")
         palette = [c for c in data["visual"]["palette"] if HEX_RE.match(c)]
         data["visual"]["palette"] = palette or ["#1d2b53", "#f4f1ea", "#e4572e"]
+        dead = dead_links([s["url"] for card in data["cards"] for s in card.get("sources") or []], cancel)
+        if dead:
+            emit(f"주소 확인: 카드 출처 중 열리지 않는 주소 {len(dead)}개를 뺌")
         for i, card in enumerate(data["cards"], start=1):
             card["id"] = f"k{i}"
+            card["sources"] = [s for s in card.get("sources") or [] if s["url"] not in dead]
         # 프로젝트의 엔진 세션(조사·답변 맥락)은 그대로 둔다
         return Outcome("result", data, None)
 
@@ -577,6 +598,19 @@ def _normalize_question(q: dict[str, Any] | None, answered: list[str]) -> dict[s
     if recommended and recommended.get("value") not in values:
         recommended = None
     return {**q, "recommended": recommended, "multi_select": False, "allow_free_text": True}
+
+
+def _drop_dead_candidates(cands: list[dict[str, Any]], dead: set[str]) -> tuple[list[dict[str, Any]], list[str]]:
+    """죽은 관련 주소는 지우고, 대표 주소가 죽었으면 살아 있는 관련 주소로 바꾼다. 하나도 없으면 후보를 뺀다."""
+    kept, broken = [], []
+    for c in cands:
+        alive = [u for u in [c["url"], *(c.get("related_urls") or [])] if u not in dead]
+        if not alive:
+            broken.append(c["title"])
+            continue
+        c["url"], c["related_urls"] = alive[0], alive[1:]
+        kept.append(c)
+    return kept, broken
 
 
 def _was_read(url: str, fetched: set[str]) -> bool:

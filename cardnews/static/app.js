@@ -301,6 +301,9 @@ function researchSection(p, ui) {
   const excluded = r.excluded?.length
     ? `<details class="small muted"><summary>조사 기간 밖이라 뺀 소식 ${r.excluded.length}개</summary><ul>${r.excluded.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>`
     : "";
+  const deadLinks = r.dead_link_excluded?.length
+    ? `<details class="small muted"><summary>기사 주소가 열리지 않아 뺀 소식 ${r.dead_link_excluded.length}개</summary><ul>${r.dead_link_excluded.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>`
+    : "";
   const items = r.candidates.map((c) => {
     const on = picked.has(c.id);
     return `
@@ -330,6 +333,7 @@ function researchSection(p, ui) {
       <p class="small">조사 기준 시각 <b>${fmtTime(r.searched_at)}</b> (${esc(r.timezone)}) · 기간 <b>${esc(r.period_start)} ~ ${esc(r.period_end)}</b> (최근 ${r.period_days}일) · 후보 ${r.candidates.length}개</p>
       ${notice}
       ${excluded}
+      ${deadLinks}
       <ul class="cands">${items}</ul>
       ${canSelect ? `
         <div class="bar">
