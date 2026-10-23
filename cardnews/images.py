@@ -212,8 +212,12 @@ def _classify_openai(status: int, text: str) -> EngineError:
     code, message = str(err.get("code") or ""), str(err.get("message") or text[:200])
     if status == 401:
         return EngineError("auth_required", "OpenAI API 키가 틀렸거나 만료됐습니다.", "키를 확인해 환경 변수에 다시 넣고 서버를 다시 켜세요.")
-    if code == "insufficient_quota" or "billing" in message.lower():
-        return EngineError("rate_limited", "OpenAI 크레딧이나 결제 한도가 부족합니다.", "OpenAI 결제 설정을 확인한 뒤 ‘다시 만들기’를 누르세요.")
+    if code == "insufficient_quota" or "billing" in message.lower() or "spend limit" in message.lower():
+        return EngineError(
+            "billing_limit",
+            "OpenAI 계정의 크레딧이나 지출 한도에 도달해 그림을 만들 수 없습니다.",
+            "서버 운영자가 OpenAI 대시보드에서 한도나 결제 설정을 바꿔야 합니다.",
+        )
     if status == 429:
         return EngineError("rate_limited", "OpenAI 요청 한도에 걸렸습니다(429).", "잠시 뒤 ‘다시 만들기’를 누르세요.")
     if status == 403 or "verif" in message.lower():

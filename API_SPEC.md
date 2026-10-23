@@ -75,7 +75,8 @@ ID는 프로젝트 범위에서 구분합니다(프로젝트 만들기는 전체
 |---|---|---|
 | `search_failed` | 검색 실패, 또는 엔진이 실제 검색을 하지 않음 | 프로젝트 |
 | `auth_required` | Claude CLI 또는 agy 로그인 필요 | 프로젝트·카드 |
-| `rate_limited` | Claude 사용 한도, 또는 agy 이미지 할당량 초과(429 RESOURCE_EXHAUSTED) | 프로젝트·카드 |
+| `rate_limited` | 사용 한도 초과(OpenAI 429, Claude 사용 한도, agy 429 RESOURCE_EXHAUSTED, 공개 모드의 하루 그림 상한) | 프로젝트·카드 |
+| `billing_limit` | OpenAI 계정의 크레딧 부족이나 지출 한도 도달. 공개 화면에 계정 정보가 나가지 않게 OpenAI 원문은 보여 주지 않음 | 프로젝트·카드 |
 | `engine_unavailable` | claude·agy 실행 파일을 찾지 못함 | 프로젝트·카드 |
 | `permission_denied` | agy가 이미지 도구 권한을 받지 못함 | 카드 |
 | `image_missing` | agy가 성공이라고 했지만 새 그림 파일이 없음 | 카드 |

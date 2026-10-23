@@ -38,7 +38,7 @@ STAGE_OF_KIND = {
 ENGINE_KINDS = ("research", "deep_research", "storyboard")
 ACTIVE_STATUSES = ("queued", "running")
 # 이 오류가 나면 남은 카드도 같은 이유로 실패할 것이므로 그림 만들기를 멈춘다
-STOP_IMAGE_CODES = ("rate_limited", "auth_required", "engine_unavailable", "permission_denied")
+STOP_IMAGE_CODES = ("rate_limited", "billing_limit", "auth_required", "engine_unavailable", "permission_denied")
 
 
 class Worker:

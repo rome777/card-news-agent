@@ -167,7 +167,9 @@ def _handle(raw: str, state: dict[str, Any], emit: Emit) -> None:
         resp = ev.get("response") or {}
         err = resp.get("error") or ev.get("error") or {}
         detail = err.get("message") or ev.get("message") or (resp.get("incomplete_details") or {}).get("reason") or kind
-        state["error"] = EngineError("engine_failed", f"OpenAI 호출이 실패했습니다: {detail}", "‘다시 시도’를 누르세요.")
+        state["error"] = _billing_error(str(detail), str(err.get("code") or "")) or EngineError(
+            "engine_failed", f"OpenAI 호출이 실패했습니다: {detail}", "‘다시 시도’를 누르세요."
+        )
 
 
 def _classify(status: int, text: str) -> EngineError:
@@ -178,13 +180,27 @@ def _classify(status: int, text: str) -> EngineError:
     code, message = str(err.get("code") or ""), str(err.get("message") or text[:200])
     if status == 401:
         return EngineError("auth_required", "OpenAI API 키가 틀렸거나 만료됐습니다.", "키를 확인해 환경 변수에 다시 넣고 서버를 다시 켜세요.")
-    if code == "insufficient_quota":
-        return EngineError("rate_limited", "OpenAI 크레딧이나 결제 한도가 부족합니다.", "OpenAI 결제 설정을 확인한 뒤 ‘다시 시도’를 누르세요.")
+    billing = _billing_error(message, code)
+    if billing:
+        return billing
     if status == 429:
         return EngineError("rate_limited", "OpenAI 요청 한도에 걸렸습니다(429).", "잠시 뒤 ‘다시 시도’를 누르세요.")
     if "previous_response" in code or ("previous response" in message.lower() and "not found" in message.lower()):
         return EngineError("session_missing", "저장된 이전 대화를 찾지 못했습니다.", "‘다시 시도’를 누르세요.")
     return EngineError("engine_failed", f"OpenAI 호출이 실패했습니다({status}): {message}", "‘다시 시도’를 누르세요.")
+
+
+def _billing_error(message: str, code: str) -> EngineError | None:
+    """크레딧 부족·지출 한도 초과. OpenAI 원문에는 프로젝트 ID 같은 계정 정보가 들어 있어
+    공개 화면에 그대로 보여 주지 않고, 다시 시도해도 소용없으니 운영자 할 일을 안내한다."""
+    low = message.lower()
+    if code == "insufficient_quota" or "spend limit" in low or "billing" in low or "exceeded your current quota" in low:
+        return EngineError(
+            "billing_limit",
+            "OpenAI 계정의 크레딧이나 지출 한도에 도달해 더 호출할 수 없습니다.",
+            "서버 운영자가 OpenAI 대시보드에서 한도나 결제 설정을 바꿔야 합니다. 그전에는 다시 시도해도 같습니다.",
+        )
+    return None
 
 
 def _strict(schema: dict[str, Any]) -> dict[str, Any]:
