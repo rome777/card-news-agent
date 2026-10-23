@@ -22,6 +22,8 @@ from PIL import Image, ImageChops
 CARD_W, CARD_H = 1080, 1350
 MIN_CONTRAST = 4.5
 MIN_ART_PX = 360
+# 메모리가 작은 컨테이너(무료 호스팅 512MB 등)에서 Chromium이 덜 쓰게 한다
+CHROMIUM_ARGS = ["--disable-dev-shm-usage", "--disable-gpu", "--no-zygote", "--renderer-process-limit=1"]
 
 OVERFLOW_JS = """() => {
   const out = [];
@@ -128,7 +130,7 @@ class Renderer:
 
         results = []
         with sync_playwright() as pw:
-            browser = pw.chromium.launch()
+            browser = pw.chromium.launch(args=CHROMIUM_ARGS)
             try:
                 page = browser.new_page(viewport={"width": CARD_W, "height": CARD_H}, device_scale_factor=1, java_script_enabled=True)
                 for job in jobs:
@@ -145,7 +147,7 @@ class Renderer:
         page_html = f"""<!doctype html><html><head><style>html,body{{margin:0;width:{size}px;height:{size}px;overflow:hidden}}
 svg{{width:{size}px;height:{size}px;display:block}}</style></head><body>{clean}</body></html>"""
         with sync_playwright() as pw:
-            browser = pw.chromium.launch()
+            browser = pw.chromium.launch(args=CHROMIUM_ARGS)
             try:
                 page = browser.new_page(viewport={"width": size, "height": size}, java_script_enabled=False)
                 page.set_content(page_html, wait_until="load")

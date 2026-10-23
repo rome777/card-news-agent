@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import socket
 import sys
 from pathlib import Path
@@ -16,7 +17,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="python -m cardnews", description="카드뉴스 에이전트 웹앱")
     parser.add_argument("--engine", choices=["openai", "claude", "mock"], default="openai", help="조사·원고 엔진 (기본: openai)")
     parser.add_argument("--host", default="127.0.0.1", help="받을 주소 (기본: 127.0.0.1, 서버 배포 때는 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8765)
+    # Render 같은 호스팅은 PORT 환경 변수로 받을 포트를 알려 준다
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8765")), help="받을 포트 (기본: 환경 변수 PORT, 없으면 8765)")
     parser.add_argument("--data-dir", type=Path, default=APP_ROOT / "data", help="결과를 저장할 폴더 (기본: 앱 폴더의 data)")
     parser.add_argument("--openai-model", default="gpt-5.4-mini", help="--engine openai일 때 모델 (기본: gpt-5.4-mini)")
     parser.add_argument("--openai-effort", choices=["low", "medium", "high"], default="medium", help="--engine openai일 때 reasoning effort (기본: medium)")

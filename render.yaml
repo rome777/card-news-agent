@@ -1,0 +1,17 @@
+# Render 블루프린트: render.com → New → Blueprint → 이 저장소를 고르면 아래대로 만든다.
+# 무료 인스턴스(0.1 CPU, 512MB)는 15분 동안 요청이 없으면 잠들고, 디스크가 남지 않아
+# 잠들거나 다시 배포하면 만든 프로젝트가 사라진다. 결과는 그 자리에서 ZIP으로 받는다.
+services:
+  - type: web
+    name: card-news-agent
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/config
+    autoDeployTrigger: commit
+    envVars:
+      # 블루프린트를 처음 만들 때 Render 화면이 값을 물어본다(저장소에는 넣지 않는다)
+      - key: OPENAI_API_KEY
+        sync: false

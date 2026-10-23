@@ -64,7 +64,25 @@ uv run python -m cardnews --engine mock
 
 ## 서버에 배포하기 (공개)
 
-리눅스 VM(우분투 22.04/24.04, vCPU 2개·메모리 4GB 이상 권장)에 Docker로 올립니다. Chromium이 카드를 찍으므로 메모리가 너무 작으면 안 됩니다.
+### 무료: Render
+
+저장소에 [render.yaml](render.yaml)이 들어 있어서 클릭 몇 번이면 올라갑니다.
+
+1. [render.com](https://render.com)에 GitHub 계정으로 가입·로그인합니다.
+2. **New → Blueprint**를 누르고 이 저장소(`rome777/card-news-agent`)를 고릅니다.
+3. `OPENAI_API_KEY` 값을 물어보면 OpenAI 키를 넣고 **Apply**를 누릅니다. 첫 빌드는 10분 안팎 걸립니다.
+4. 끝나면 나오는 `https://card-news-agent-xxxx.onrender.com` 주소를 엽니다. GitHub `main`에 올릴 때마다 자동으로 다시 배포됩니다.
+
+**무료 인스턴스의 한계(0.1 CPU, 메모리 512MB)**
+
+- **잠자기:** 15분 동안 요청이 없으면 잠들고, 다음 접속 때 깨어나는 데 1분쯤 걸립니다. 카드뉴스 화면을 열어 두면 화면이 계속 상태를 물어보므로 쓰는 동안에는 잠들지 않습니다.
+- **저장:** 디스크가 남지 않습니다. 잠들거나 다시 배포하면 만든 프로젝트가 **사라집니다.** 결과는 그 자리에서 ZIP으로 내려받으세요.
+- **속도:** CPU가 작아 카드 PNG를 찍는 데 시간이 더 걸립니다. 메모리가 모자라 서버가 다시 시작되면 「중단됨」과 다시 시도가 나옵니다.
+- **사용 시간:** 무료 인스턴스 시간은 한 달 750시간이고, 넘으면 그달 말까지 멈춥니다.
+
+### 직접 VM에 올리기
+
+리눅스 VM(우분투 22.04/24.04, vCPU 2개·메모리 4GB 이상 권장)에 Docker로 올립니다. 결과가 남고 잠들지 않지만 서버 비용이 들 수 있습니다.
 
 1. 클라우드에서 우분투 VM을 만들고, 방화벽(보안 그룹)에서 **80번 포트**를 엽니다.
 2. VM에 SSH로 들어가 아래를 실행합니다.
@@ -146,7 +164,7 @@ bash setup-ubuntu.sh
 | `cardnews/procs.py` | claude·agy 프로세스 실행·취소·정리 |
 | `cardnews/store.py` | SQLite 저장소 |
 | `cardnews/static/` | 브라우저 화면 |
-| `Dockerfile`, `docker-compose.yml`, `deploy/` | 서버 배포 |
+| `Dockerfile`, `render.yaml`, `docker-compose.yml`, `deploy/` | 서버 배포(Render 무료 블루프린트, VM용 Docker Compose) |
 | `data/` | 앱이 만든 결과. 저장소에 올리지 않습니다 |
 
 ## 막힐 때

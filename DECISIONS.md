@@ -22,7 +22,9 @@ PRD.md의 미정 사항과 만들면서 정한 것을 적은 기록입니다.
 |---|---|---|---|
 | 조사·원고 엔진 | **OpenAI Responses API**(`--engine openai`, 기본). 기본 모델 `gpt-5.4-mini`, reasoning effort medium. 웹 조사는 내장 `web_search` 도구, 결과 모양은 json_schema(strict), 질문 뒤 이어가기는 `previous_response_id`. 프롬프트·스키마·결과 검사는 Claude 엔진과 같은 것을 씀 | 사용자가 "클로드 로그인 말고 모든 API는 OpenAI 것을 써"라고 함. 서버에 Claude 로그인을 둘 수 없음. 모델은 공개 서버 비용을 줄이려고 mini를 기본으로 함(OpenAI 안내서는 웹 검색에 `gpt-5.5`를 추천) | 사용자 결정 |
 | Claude CLI 엔진 | `--engine claude` 옵션으로 남김 | 앞서 검증한 경로를 지우지 않음 | 기본안 |
-| 배포 방식 | 리눅스 VM + Docker(`Dockerfile`, `docker-compose.yml`, `deploy/setup-ubuntu.sh`). HTTP 80번 | 사용자가 클라우드 VM을 고름. 이 PC에는 Docker·클라우드 CLI가 없어 VM은 사용자가 만들어야 함 | 사용자 결정 |
+| 배포 방식 | **Render 무료 인스턴스**(`render.yaml` 블루프린트, Docker, 싱가포르 리전). VM용 Docker Compose(`docker-compose.yml`, `deploy/setup-ubuntu.sh`)는 대안으로 남김 | 사용자가 무료를 원함. Vercel은 긴 작업·디스크·Chromium 때문에 구조를 새로 짜야 하고, Railway는 월 5달러부터, Hugging Face Spaces는 Docker 앱에 유료 플랜(PRO)이 필요함(공식 문서 확인). Render 무료는 15분 무요청 시 잠들고 디스크가 남지 않으며 메모리 512MB라는 한계를 사용자에게 안내함 | 사용자 결정 |
+| 포트 | 환경 변수 `PORT`가 있으면 그 포트로 받음 | Render가 포트를 `PORT`로 알려 줌 | 기본안 |
+| Chromium 옵션 | `--disable-dev-shm-usage --disable-gpu --no-zygote --renderer-process-limit=1` | 512MB 컨테이너에서 메모리를 덜 쓰게 함 | 기본안 |
 | 공개 범위 | 누구나 접속, **접속 비밀번호 없음** | 사용자 결정. 비용은 모두 서버의 OpenAI 키 계정으로 청구됨을 안내함 | 사용자 결정 |
 | 하루 사용량 상한 | 새 카드뉴스 하루 30개·접속 주소당 5개, 그림 하루 150장. 숫자를 바꾸거나 0으로 끌 수 있음 | 비밀번호 없이 공개하므로 누가 비용을 크게 쓰는 것을 막는 최소한의 장치. 사용자는 비밀번호만 필요 없다고 했고 상한은 따로 정하지 않아 기본안으로 둠 | 기본안 |
 | 공개 모드의 프로젝트 목록 | 서버가 목록을 주지 않고, 각 브라우저가 자기가 만든 프로젝트 ID만 기억함 | 남의 카드뉴스가 첫 화면에 보이지 않게 함 | 기본안 |
