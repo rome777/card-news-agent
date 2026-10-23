@@ -67,7 +67,7 @@ def card_html(card: dict[str, Any], image_src: str | None, index: int, total: in
     body_px = 40 * scale
     image = f'<img src="{html.escape(image_src, quote=True)}" alt="">' if image_src else ""
     tool = (card.get("image") or {}).get("tool", "")
-    badge = {"agy": "AI 생성 이미지", "openai": "AI 생성 이미지", "svg": "코드로 그린 그림", "claude-svg": "코드로 그린 그림", "mock": "모의 이미지"}.get(tool, "")
+    badge = {"agy": "AI 생성 이미지", "openai": "AI 생성 이미지", "gemini": "AI 생성 이미지", "svg": "코드로 그린 그림", "claude-svg": "코드로 그린 그림", "mock": "모의 이미지"}.get(tool, "")
     text = f"""<div class="textbox" data-check="text">
   <div class="title">{_text(card['title'])}</div>
   {f'<div class="body">{_text(card["body"])}</div>' if card.get('body') else ''}

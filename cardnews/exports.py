@@ -153,6 +153,7 @@ def _tool_label(tool: str | None) -> str:
     return {
         "agy": "Antigravity CLI 내장 이미지 도구로 생성한 일러스트",
         "openai": "OpenAI 이미지 API로 생성한 일러스트",
+        "gemini": "Gemini 이미지 모델로 생성한 일러스트",
         "svg": "언어 모델이 SVG 코드로 그린 도형 그림(AI 일러스트 아님)",
         "claude-svg": "Claude CLI가 SVG 코드로 그린 도형 그림(AI 일러스트 아님)",
         "mock": "모의 그림(실제 생성 아님)",

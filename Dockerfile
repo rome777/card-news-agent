@@ -1,5 +1,5 @@
 # 카드뉴스 에이전트 서버 이미지 (리눅스 VM용)
-# - 조사·원고·그림은 모두 OpenAI API를 쓴다(OPENAI_API_KEY 필요).
+# - 조사·원고·그림은 모두 Gemini API를 쓴다(GEMINI_API_KEY 필요).
 # - 카드 PNG는 Playwright(Chromium)로 찍고, 한글은 Noto CJK 글꼴로 그린다.
 FROM python:3.12-slim
 
@@ -22,4 +22,6 @@ RUN uv sync --frozen --no-dev \
 COPY cardnews ./cardnews
 
 EXPOSE 8765
-CMD ["uv", "run", "--no-sync", "python", "-m", "cardnews", "--host", "0.0.0.0", "--public", "--data-dir", "/data"]
+# Render 같은 호스팅은 프록시 뒤에서 돌므로 접속 주소를 프록시 헤더에서 읽는다(--trust-proxy).
+# 프록시 없이 직접 여는 VM용 docker-compose.yml은 이 옵션을 쓰지 않는다.
+CMD ["uv", "run", "--no-sync", "python", "-m", "cardnews", "--host", "0.0.0.0", "--public", "--trust-proxy", "--data-dir", "/data"]

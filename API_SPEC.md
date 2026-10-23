@@ -75,13 +75,13 @@ ID는 프로젝트 범위에서 구분합니다(프로젝트 만들기는 전체
 |---|---|---|
 | `search_failed` | 검색 실패, 또는 엔진이 실제 검색을 하지 않음 | 프로젝트 |
 | `auth_required` | Claude CLI 또는 agy 로그인 필요 | 프로젝트·카드 |
-| `rate_limited` | 사용 한도 초과(OpenAI 429, Claude 사용 한도, agy 429 RESOURCE_EXHAUSTED, 공개 모드의 하루 그림 상한) | 프로젝트·카드 |
-| `billing_limit` | OpenAI 계정의 크레딧 부족이나 지출 한도 도달. 공개 화면에 계정 정보가 나가지 않게 OpenAI 원문은 보여 주지 않음 | 프로젝트·카드 |
+| `rate_limited` | 사용 한도 초과(Gemini·OpenAI 429, Claude 사용 한도, agy 429 RESOURCE_EXHAUSTED, 공개 모드의 하루 그림 상한) | 프로젝트·카드 |
+| `billing_limit` | Gemini·OpenAI 계정의 결제 미등록·크레딧 부족·지출 한도 도달. 공개 화면에 계정 정보가 나가지 않게 제공사 원문은 보여 주지 않음 | 프로젝트·카드 |
 | `engine_unavailable` | claude·agy 실행 파일을 찾지 못함 | 프로젝트·카드 |
 | `permission_denied` | agy가 이미지 도구 권한을 받지 못함 | 카드 |
 | `image_missing` | agy가 성공이라고 했지만 새 그림 파일이 없음 | 카드 |
 | `image_invalid` | 그림 파일이 이미지로 열리지 않거나 너무 작음 | 카드 |
-| `image_blocked` | OpenAI 안전 기준에 걸려 그림을 만들지 않음 | 카드 |
+| `image_blocked` | 그림 모델이 안전 기준 등으로 그림 대신 글만 돌려줌(OpenAI는 안전 기준 오류) | 카드 |
 | `image_failed` | 그 밖의 agy 실패 | 카드 |
 | `invalid_output` | 엔진 출력이 정해진 형식이 아님(카드 수·질문 형식 등) | 프로젝트 |
 | `session_missing` | 저장한 엔진 세션을 찾지 못함. 저장된 내용으로 새 세션을 열어 한 번 더 시도함 | 진행 내역 |
@@ -130,9 +130,9 @@ ID는 프로젝트 범위에서 구분합니다(프로젝트 만들기는 전체
 
 | 요청 | 입력 | 응답 |
 |---|---|---|
-| `GET /api/config` | — | `{ engine, mock, images, public }` (`engine`: openai·claude·mock, `images`: openai·agy·mock) |
+| `GET /api/config` | — | `{ engine, mock, images, public }` (`engine`: gemini·openai·claude·mock, `images`: gemini·openai·agy·mock) |
 | `GET /api/projects` | — | `{ projects: [{ id, topic, stage, status, updated_at, mock, engine }] }` (최근에 바뀐 순). **공개 모드에서는 빈 목록** — 화면이 브라우저에 기억한 자기 프로젝트 ID로 하나씩 불러옴 |
-| `POST /api/projects` | `topic`(1~100자), `periodDays`(1~30, 기본 7), `requestId` | `{ projectId }`. 조사는 시작하지 않음. 공개 모드에서 하루 상한(전체·접속 주소별)을 넘으면 `429 daily_limit` |
+| `POST /api/projects` | `topic`(1~100자), `periodDays`(1~30, 기본 7), `requestId` | `{ projectId }`. 조사는 시작하지 않음. 공개 모드에서 하루 상한(전체 30개, 접속 주소당 1개)을 넘으면 `429 daily_limit`. 환경 변수 `CARDNEWS_UNLIMITED_IPS`의 주소는 주소당 상한에서 빠짐. `--trust-proxy`면 접속 주소를 `CF-Connecting-IP`·`True-Client-IP`·`X-Forwarded-For` 첫 값 순으로 읽음. 같은 `requestId` 재전송은 세지 않고, 센 숫자는 SQLite `usage` 표에 남음 |
 | `GET /api/projects/{id}` | — | `{ project, runs }` (아래 「프로젝트 문서」, runs는 최근 5개) |
 | `POST /api/projects/{id}/research` | `requestId`, `periodDays`(선택: 바꿔서 다시 조사) | `{ runId, status, alreadyRunning }`. 후보를 고른 뒤에는 `409 invalid_stage`. 조사 중이면 새로 시작하지 않고 진행 중인 run을 돌려줌 |
 | `POST /api/projects/{id}/selection` | `candidateIds`(1~3개), `version`, `requestId` | `{ selection, runId, status }`. 선택을 저장하고 심층 조사 시작 |
@@ -154,7 +154,7 @@ ID는 프로젝트 범위에서 구분합니다(프로젝트 만들기는 전체
 | 요청 | 입력 | 응답 |
 |---|---|---|
 | `POST /api/projects/{id}/images` | `requestId` | `{ runId, status, cards }`. 그림이 없는 카드만 다시 만듦. 완성된 카드는 건드리지 않음 |
-| `POST /api/projects/{id}/cards/{cardId}/image` | `tool: "default" \| "claude"`, `requestId` | `{ runId, status }`. 그 카드만 카드의 `scene`으로 그림을 다시 만듦. `default`는 서버를 켤 때 고른 그림 작업자(agy·openai·mock, 예전 값 `"agy"`도 같은 뜻), `claude`는 Claude CLI가 SVG로 그린 도형 그림 |
+| `POST /api/projects/{id}/cards/{cardId}/image` | `tool: "default" \| "claude"`, `requestId` | `{ runId, status }`. 그 카드만 카드의 `scene`으로 그림을 다시 만듦. `default`는 서버를 켤 때 고른 그림 작업자(gemini·openai·agy·mock, 예전 값 `"agy"`도 같은 뜻), `claude`는 Claude CLI가 SVG로 그린 도형 그림 |
 | `POST /api/projects/{id}/cards/{cardId}/edit` | `title`(1~80자), `body`(400자 이하), `source_line`(200자 이하), `scene`(선택, 400자 이하), `style`, `version`, `requestId` | `{ runId, status }`. 글·스타일·그림 장면만 바꾸고 PNG를 다시 만듦. **그림은 그대로**이고, 바꾼 장면은 다음 '그림 다시 만들기' 때 쓰임 |
 | `POST /api/projects/{id}/rerender` | `requestId` | `{ runId, status, cards }`. 그림은 두고 모든 카드의 글자 배치를 지금 레이아웃으로 다시 함. 카드마다 rev가 오르고 최종 승인이 풀림 |
 | `POST /api/projects/{id}/revisions` | `cardIds`, `instruction`(1~500자), `scope: "auto" \| "text" \| "image"`, `version`, `requestId` | `{ runId, status }`. 고른 카드만 엔진이 고침. `text`는 글만, `image`는 그림만, `auto`는 엔진이 판단 |
@@ -270,8 +270,9 @@ Claude CLI 호출 공통: `claude.exe -p --output-format stream-json --verbose -
 
 | 엔진 | 파일 |
 |---|---|
-| `openai` (기본) | `cardnews/engines/openai_api.py`. `POST https://api.openai.com/v1/responses`를 스트리밍으로 부름. 웹 도구가 필요한 단계는 `tools: [{"type":"web_search"}]`, 결과는 `text.format` json_schema(strict, null 허용 객체는 anyOf로 바꿈). `previous_response_id`로 같은 대화를 이어 가고, 저장된 앞 응답이 없으면 프롬프트만으로 새로 시작. 검색어(`action.type=search`)와 연 페이지(`open_page`)를 진행 내역에 남김. 기본 모델 `gpt-5.4-mini` |
-| `claude` | `cardnews/engines/claude_cli.py`. 프롬프트·스키마·결과 검사의 원본(OpenAI 엔진이 상속해서 씀) |
+| `gemini` (기본) | `cardnews/engines/gemini_api.py`. Interactions API(`POST https://generativelanguage.googleapis.com/v1beta/interactions`)를 `background: true`로 부르고 2초마다 `GET …/interactions/{id}`로 끝날 때까지 확인. 웹 도구가 필요한 단계는 `tools: [{"type":"google_search"},{"type":"url_context"}]`, 결과는 `response_format`의 JSON 스키마(`additionalProperties`를 빼고 null 허용 타입은 anyOf로 바꿈), `generation_config.thinking_level`. `previous_interaction_id`로 같은 대화를 이어 감. 진행 내역에는 검색어(`google_search_call`)와 연 주소(`url_context_result`, 성공만 원문 확인으로 셈)를 남김. 키는 환경 변수 `GEMINI_API_KEY`(없으면 `GOOGLE_API_KEY`). 기본 모델 `gemini-3.8-flash`, thinking medium |
+| `openai` | `cardnews/engines/openai_api.py`. `POST https://api.openai.com/v1/responses`를 스트리밍으로 부름. 웹 도구가 필요한 단계는 `tools: [{"type":"web_search"}]`, 결과는 `text.format` json_schema(strict, null 허용 객체는 anyOf로 바꿈). `previous_response_id`로 같은 대화를 이어 가고, 저장된 앞 응답이 없으면 프롬프트만으로 새로 시작. 검색어(`action.type=search`)와 연 페이지(`open_page`)를 진행 내역에 남김. 기본 모델 `gpt-5.4-mini` |
+| `claude` | `cardnews/engines/claude_cli.py`. 프롬프트·스키마·결과 검사의 원본(Gemini·OpenAI 엔진이 상속해서 씀) |
 | `mock` | `cardnews/engines/mock.py`. 실제 검색 없음. 제목에 `[모의]`, 링크는 `example.com` |
 
 공개 모드에서는 그림 한 장을 만들기 전에 하루 그림 상한을 확인하고, 넘으면 `rate_limited`로 그 카드를 멈춥니다.
@@ -286,7 +287,8 @@ renderer.render([{ card, image_path, out_png, index, total, background }]) -> [{
 | 구현 | 내용 |
 |---|---|
 | `AgyImageMaker` (`cardnews/images.py`, `--images agy`) | `agy -p "<자연어 요청>" --output-format json`. 응답의 `conversation_id`로 `~/.gemini/antigravity-cli/brain/<id>/`에서 새 그림을 찾고, Pillow로 열어 형식·크기를 확인한 뒤 프로젝트 `images/`로 복사. 그림이 없으면 이번 호출의 agy 대화 기록에서 429 등 원인을 찾음 |
-| `OpenAIImageMaker` (기본) | `POST https://api.openai.com/v1/images/generations` (`model: gpt-image-1.5`, `size: 1024x1024`, `quality: medium`, `output_format: png`). 응답의 base64를 PNG로 저장하고 Pillow로 확인. 키는 환경 변수 `OPENAI_API_KEY`에서만 읽음. 401 → `auth_required`, 크레딧 부족·429 → `rate_limited`, 403·조직 인증 → `permission_denied`, 안전 기준 → `image_blocked` |
+| `GeminiImageMaker` (기본) | 같은 Interactions API에 `model: gemini-3.1-flash-image`, `response_format: {type: image, aspect_ratio: "1:1", image_size: "1K", mime_type: image/jpeg}`로 요청. 응답 `model_output`의 이미지 블록(base64)을 JPEG로 저장하고 Pillow로 확인. 그림 없이 글만 오면 `image_blocked`, 아무것도 없으면 `image_missing`. 오류 분류는 엔진과 같음 |
+| `OpenAIImageMaker` (`--images openai`) | `POST https://api.openai.com/v1/images/generations` (`model: gpt-image-1.5`, `size: 1024x1024`, `quality: medium`, `output_format: png`). 응답의 base64를 PNG로 저장하고 Pillow로 확인. 키는 환경 변수 `OPENAI_API_KEY`에서만 읽음. 401 → `auth_required`, 크레딧 부족·429 → `rate_limited`, 403·조직 인증 → `permission_denied`, 안전 기준 → `image_blocked` |
 | `MockImageMaker` | Pillow로 단순한 도형 그림. `--mock-fail images`면 첫 그림을 할당량 초과로 실패 |
 | `Renderer` (`cardnews/render.py`) | 글 상자와 그림을 위아래로 나눠 배치한 카드 HTML을 Playwright(Chromium)로 1080×1350 PNG로 찍음. 그림의 빈 가장자리는 잘라 내고, 카드 바탕은 한 편 전체에 같은 색. 같은 페이지에서 잘림·글과 그림의 겹침·그림 크기(360px 미만)·명암 대비(기준 4.5:1)를 잼. SVG 도형 그림을 PNG로 바꿀 때는 스크립트를 끈 페이지를 씀 |
 

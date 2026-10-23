@@ -17,7 +17,7 @@ const STAGE = {
   review: "검수·수정",
   final: "최종 승인",
 };
-const TOOL = { agy: "AI 생성 이미지 (agy)", openai: "AI 생성 이미지 (OpenAI)", svg: "코드 도형 그림", "claude-svg": "코드 도형 그림", mock: "모의 그림" };
+const TOOL = { agy: "AI 생성 이미지 (agy)", openai: "AI 생성 이미지 (OpenAI)", gemini: "AI 생성 이미지 (Gemini)", svg: "코드 도형 그림", "claude-svg": "코드 도형 그림", mock: "모의 그림" };
 const STATUS = {
   idle: "대기",
   running: "진행 중",

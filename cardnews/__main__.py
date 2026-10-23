@@ -15,22 +15,27 @@ def main() -> int:
     # 서버 창(또는 Docker 로그)에 안내가 바로 보이게 한다
     sys.stdout.reconfigure(line_buffering=True)
     parser = argparse.ArgumentParser(prog="python -m cardnews", description="카드뉴스 에이전트 웹앱")
-    parser.add_argument("--engine", choices=["openai", "claude", "mock"], default="openai", help="조사·원고 엔진 (기본: openai)")
+    parser.add_argument("--engine", choices=["gemini", "openai", "claude", "mock"], default="gemini", help="조사·원고 엔진 (기본: gemini)")
     parser.add_argument("--host", default="127.0.0.1", help="받을 주소 (기본: 127.0.0.1, 서버 배포 때는 0.0.0.0)")
     # Render 같은 호스팅은 PORT 환경 변수로 받을 포트를 알려 준다
     parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8765")), help="받을 포트 (기본: 환경 변수 PORT, 없으면 8765)")
     parser.add_argument("--data-dir", type=Path, default=APP_ROOT / "data", help="결과를 저장할 폴더 (기본: 앱 폴더의 data)")
+    parser.add_argument("--gemini-model", default="gemini-3.8-flash", help="--engine gemini일 때 모델 (기본: gemini-3.8-flash)")
+    parser.add_argument("--gemini-thinking", choices=["minimal", "low", "medium", "high"], default="medium", help="--engine gemini일 때 thinking level (기본: medium)")
+    parser.add_argument("--gemini-image-model", default="gemini-3.1-flash-image", help="--images gemini일 때 모델 (기본: gemini-3.1-flash-image)")
+    parser.add_argument("--gemini-image-size", choices=["512", "1K", "2K"], default="1K", help="--images gemini일 때 크기 (기본: 1K)")
     parser.add_argument("--openai-model", default="gpt-5.4-mini", help="--engine openai일 때 모델 (기본: gpt-5.4-mini)")
     parser.add_argument("--openai-effort", choices=["low", "medium", "high"], default="medium", help="--engine openai일 때 reasoning effort (기본: medium)")
     parser.add_argument(
-        "--images", choices=["openai", "agy", "mock"],
-        help="그림 작업자 (기본: openai·claude 엔진이면 openai, mock 엔진이면 mock). agy는 한도가 작아 옵션으로만 둔다",
+        "--images", choices=["gemini", "openai", "agy", "mock"],
+        help="그림 작업자 (기본: mock 엔진이면 mock, 그 밖에는 gemini). agy는 한도가 작아 옵션으로만 둔다",
     )
     parser.add_argument("--openai-image-model", default="gpt-image-1.5", help="--images openai일 때 모델 (기본: gpt-image-1.5)")
     parser.add_argument("--openai-image-quality", choices=["low", "medium", "high"], default="medium", help="--images openai일 때 품질 (기본: medium)")
     parser.add_argument("--public", action="store_true", help="공개 서버 모드: 다른 사람의 프로젝트 목록을 보여 주지 않고 하루 사용량 상한을 건다")
     parser.add_argument("--daily-project-limit", type=int, default=30, help="공개 모드에서 하루에 새로 만들 수 있는 프로젝트 수 (0이면 제한 없음)")
-    parser.add_argument("--ip-daily-project-limit", type=int, default=5, help="공개 모드에서 접속 주소 하나가 하루에 만들 수 있는 프로젝트 수 (0이면 제한 없음)")
+    parser.add_argument("--ip-daily-project-limit", type=int, default=1, help="공개 모드에서 접속 주소 하나가 하루에 만들 수 있는 프로젝트 수 (기본 1, 0이면 제한 없음)")
+    parser.add_argument("--trust-proxy", action="store_true", help="호스팅 프록시 뒤에서 실행할 때: 접속 주소를 프록시가 붙인 헤더(X-Forwarded-For 등)에서 읽는다")
     parser.add_argument("--daily-image-limit", type=int, default=150, help="공개 모드에서 하루에 만들 수 있는 그림 수 (0이면 제한 없음)")
     parser.add_argument(
         "--mock-fail", choices=["research", "deep_research", "storyboard", "images"],
@@ -48,9 +53,10 @@ def main() -> int:
     import uvicorn
 
     from .engines.claude_cli import ClaudeCliEngine
+    from .engines.gemini_api import GeminiEngine
     from .engines.mock import MockEngine
     from .engines.openai_api import OpenAIEngine
-    from .images import AgyImageMaker, MockImageMaker, OpenAIImageMaker
+    from .images import AgyImageMaker, GeminiImageMaker, MockImageMaker, OpenAIImageMaker
     from .procs import reap_orphans
     from .render import Renderer
     from .server import Limits, create_app
@@ -59,14 +65,18 @@ def main() -> int:
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     store = Store(args.data_dir.resolve())
-    if args.engine == "openai":
+    if args.engine == "gemini":
+        engine = GeminiEngine(model=args.gemini_model, effort=args.gemini_thinking)
+    elif args.engine == "openai":
         engine = OpenAIEngine(model=args.openai_model, effort=args.openai_effort)
     elif args.engine == "claude":
         engine = ClaudeCliEngine(model=args.model, effort=args.effort)
     else:
         engine = MockEngine(fail_once=args.mock_fail if args.mock_fail != "images" else None)
-    image_tool = args.images or ("mock" if args.engine == "mock" else "openai")
-    if image_tool == "agy":
+    image_tool = args.images or ("mock" if args.engine == "mock" else "gemini")
+    if image_tool == "gemini":
+        images = GeminiImageMaker(model=args.gemini_image_model, size=args.gemini_image_size)
+    elif image_tool == "agy":
         images = AgyImageMaker()
     elif image_tool == "openai":
         images = OpenAIImageMaker(model=args.openai_image_model, quality=args.openai_image_quality)
@@ -78,7 +88,12 @@ def main() -> int:
     reaped = reap_orphans(store.data_dir)
     if reaped:
         print(f"지난번 서버가 꺼질 때 남은 claude/agy 프로세스 {reaped}개를 정리했습니다.")
-    limits = Limits(args.daily_project_limit, args.ip_daily_project_limit, args.daily_image_limit) if args.public else Limits()
+    # 접속 주소당 상한에서 빼 줄 주소. 공개 저장소에 남지 않게 환경 변수 CARDNEWS_UNLIMITED_IPS(쉼표로 구분)로만 받는다
+    unlimited = {ip.strip() for ip in os.environ.get("CARDNEWS_UNLIMITED_IPS", "").split(",") if ip.strip()}
+    limits = (
+        Limits(args.daily_project_limit, args.ip_daily_project_limit, args.daily_image_limit, store=store, unlimited_ips=unlimited)
+        if args.public else Limits()
+    )
     worker = Worker(store, engine, images, Renderer(), image_quota=limits.take_image)
     interrupted = worker.recover_interrupted()
     if interrupted:
@@ -86,10 +101,12 @@ def main() -> int:
 
     print(f"엔진: {engine.name}{f' ({engine.model})' if hasattr(engine, 'model') else ''} · 그림: {image_tool} · 저장 폴더: {store.data_dir}")
     if args.public:
-        print(f"공개 모드: 하루 프로젝트 {args.daily_project_limit or '무제한'}개(주소당 {args.ip_daily_project_limit or '무제한'}개), 그림 {args.daily_image_limit or '무제한'}장")
+        print(f"공개 모드: 하루 프로젝트 {args.daily_project_limit or '무제한'}개(주소당 {args.ip_daily_project_limit or '무제한'}개), 그림 {args.daily_image_limit or '무제한'}장"
+              f"{f' · 주소당 상한 제외 {len(unlimited)}개' if unlimited else ''}")
     shown = "127.0.0.1" if args.host in ("0.0.0.0", "::") else args.host
     print(f"브라우저에서 http://{shown}:{args.port} 를 여세요. 끄려면 이 창에서 Ctrl+C")
-    uvicorn.run(create_app(store, worker, public=args.public, limits=limits), host=args.host, port=args.port, log_level="warning")
+    app = create_app(store, worker, public=args.public, limits=limits, trust_proxy=args.trust_proxy)
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
     return 0
 
 

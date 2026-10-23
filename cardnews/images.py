@@ -227,6 +227,62 @@ def _classify_openai(status: int, text: str) -> EngineError:
     return EngineError("image_failed", f"OpenAI 그림 생성이 실패했습니다({status}): {message}", "‘다시 만들기’를 누르세요.")
 
 
+class GeminiImageMaker:
+    """Gemini Interactions API의 이미지 모델(기본 gemini-3.1-flash-image, agy가 쓰던 것과 같은 모델)."""
+
+    name = "gemini"
+
+    def __init__(self, model: str = "gemini-3.1-flash-image", size: str = "1K"):
+        self.model = model
+        self.size = size
+
+    def check(self) -> str | None:
+        from .engines.gemini_api import gemini_key
+
+        return None if gemini_key() else "Gemini API 키(환경 변수 GEMINI_API_KEY)가 없습니다."
+
+    def generate(self, prompt: str, out_base: Path, work_dir: Path, emit: Emit, cancel: threading.Event) -> dict[str, Any]:
+        from .engines.gemini_api import BASE_URL, call_api
+
+        emit(f"Gemini에 그림 요청 ({self.model}, {self.size})")
+        body = {
+            "model": self.model,
+            "input": [{"type": "text", "text": prompt}],
+            "response_format": {"type": "image", "aspect_ratio": "1:1", "image_size": self.size, "mime_type": "image/jpeg"},
+        }
+        interaction = call_api("POST", BASE_URL, body, cancel, timeout=240)
+        deadline = time.monotonic() + 5 * 60
+        while interaction.get("status") == "in_progress" and interaction.get("id"):
+            if time.monotonic() > deadline:
+                raise EngineError("timeout", "그림이 시간 안에 오지 않았습니다.", "‘다시 만들기’를 누르세요.")
+            if cancel.wait(2.0):
+                raise Cancelled()
+            interaction = call_api("GET", f"{BASE_URL}/{interaction['id']}", None, cancel)
+
+        data, said = None, []
+        for step in interaction.get("steps") or []:
+            if step.get("type") != "model_output":
+                continue
+            for block in step.get("content") or []:
+                if block.get("type") == "image" and block.get("data"):
+                    data = block["data"]
+                elif block.get("type") == "text" and block.get("text"):
+                    said.append(block["text"])
+        if not data:
+            # 그림 대신 글만 돌아오면 대개 안전 기준에 걸린 경우다
+            raise EngineError(
+                "image_blocked" if said else "image_missing",
+                "Gemini가 그림을 만들지 않았습니다." + (f" (모델 응답: {said[0][:120]})" if said else ""),
+                "‘글자 고치기’에서 그림 장면을 바꾼 뒤 ‘그림 다시 만들기’를 누르세요.",
+            )
+        out = out_base.with_suffix(".jpg")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(base64.b64decode(data))
+        info = _verify_image(out)
+        emit(f"그림 파일 확인: {out.name} ({info['width']}×{info['height']} {info['format']})")
+        return {"file": out, "conversation_id": interaction.get("id"), "original_path": None, **info}
+
+
 class MockImageMaker:
     """실제 생성 없이 Pillow로 그림을 만든다. fail_once='images'면 첫 요청을 할당량 초과로 실패시킨다."""
 

@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS runs (
   doc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS runs_by_project ON runs (project_id, updated_at);
+CREATE TABLE IF NOT EXISTS usage (
+  day TEXT NOT NULL,
+  key TEXT NOT NULL,
+  count INTEGER NOT NULL,
+  PRIMARY KEY (day, key)
+);
 CREATE TABLE IF NOT EXISTS requests (
   scope TEXT NOT NULL,
   request_id TEXT NOT NULL,
@@ -164,6 +170,20 @@ class Store:
             self._db.execute(
                 "INSERT INTO requests (scope, request_id, fingerprint, response, created_at) VALUES (?, ?, ?, ?, ?)",
                 (scope, request_id, fingerprint, _dump(response), now_iso()),
+            )
+
+    # 하루 사용량(공개 모드의 상한). 서버를 다시 켜도 그날 숫자가 남는다.
+
+    def usage_count(self, day: str, key: str) -> int:
+        with self._lock:
+            row = self._db.execute("SELECT count FROM usage WHERE day = ? AND key = ?", (day, key)).fetchone()
+        return row[0] if row else 0
+
+    def add_usage(self, day: str, key: str) -> None:
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO usage (day, key, count) VALUES (?, ?, 1) ON CONFLICT(day, key) DO UPDATE SET count = count + 1",
+                (day, key),
             )
 
     @property

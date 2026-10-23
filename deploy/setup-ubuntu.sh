@@ -19,10 +19,10 @@ fi
 cd "$APP_DIR"
 git pull --ff-only
 
-if [ ! -s .env ] || ! grep -q '^OPENAI_API_KEY=.\+' .env; then
+if [ ! -s .env ] || ! grep -q '^GEMINI_API_KEY=.\+' .env; then
   cp -n .env.example .env || true
   chmod 600 .env
-  echo ".env에 OpenAI API 키가 없습니다. 아래 파일을 열어 OPENAI_API_KEY= 뒤에 키를 넣고 이 스크립트를 다시 실행하세요."
+  echo ".env에 Gemini API 키가 없습니다. 아래 파일을 열어 GEMINI_API_KEY= 뒤에 키를 넣고 이 스크립트를 다시 실행하세요."
   echo "  nano $APP_DIR/.env"
   exit 1
 fi

@@ -37,37 +37,47 @@ class ApiError(Exception):
 
 
 class Limits:
-    """공개 서버의 하루 사용량 상한. 0은 제한 없음. 날짜가 바뀌면 다시 센다(서버를 다시 켜도 다시 센다)."""
+    """공개 서버의 하루 사용량 상한. 0은 제한 없음. 숫자는 저장소(SQLite)에 남겨 서버를 다시 켜도 그날 것은 유지한다.
+    (디스크가 남지 않는 무료 호스팅에서는 디스크와 함께 사라진다.) 날짜는 서버 시간대 기준이다."""
 
-    def __init__(self, projects: int = 0, ip_projects: int = 0, images: int = 0):
+    def __init__(
+        self, projects: int = 0, ip_projects: int = 0, images: int = 0, store: Store | None = None,
+        unlimited_ips: set[str] | None = None,
+    ):
         self.projects, self.ip_projects, self.images = projects, ip_projects, images
+        self.store = store
+        # 접속 주소당 상한을 적용하지 않는 주소(운영자 등). 저장소에 올리지 않도록 환경 변수로만 받는다.
+        self.unlimited_ips = unlimited_ips or set()
         self._lock = threading.Lock()
-        self._day = ""
-        self._counts: dict[str, int] = {}
+        self._memory: dict[tuple[str, str], int] = {}
 
-    def _roll(self) -> None:
-        today = date.today().isoformat()
-        if today != self._day:
-            self._day, self._counts = today, {}
+    def _count(self, day: str, key: str) -> int:
+        return self.store.usage_count(day, key) if self.store else self._memory.get((day, key), 0)
+
+    def _add(self, day: str, key: str) -> None:
+        if self.store:
+            self.store.add_usage(day, key)
+        else:
+            self._memory[(day, key)] = self._memory.get((day, key), 0) + 1
 
     def take_project(self, ip: str) -> str | None:
         """새 프로젝트를 하나 쓸 수 있으면 세고 None, 상한이면 이유를 돌려준다."""
+        day = date.today().isoformat()
         with self._lock:
-            self._roll()
-            if self.projects and self._counts.get("projects", 0) >= self.projects:
+            if self.projects and self._count(day, "projects") >= self.projects:
                 return f"오늘 이 서버에서 만들 수 있는 카드뉴스 수({self.projects}개)를 모두 썼습니다."
-            if self.ip_projects and self._counts.get(f"ip:{ip}", 0) >= self.ip_projects:
-                return f"오늘 이 접속 주소에서 만들 수 있는 카드뉴스 수({self.ip_projects}개)를 모두 썼습니다."
-            self._counts["projects"] = self._counts.get("projects", 0) + 1
-            self._counts[f"ip:{ip}"] = self._counts.get(f"ip:{ip}", 0) + 1
+            if self.ip_projects and ip not in self.unlimited_ips and self._count(day, f"ip:{ip}") >= self.ip_projects:
+                return f"카드뉴스는 같은 접속 주소에서 하루 {self.ip_projects}번까지 만들 수 있습니다. 오늘은 이미 만들었습니다."
+            self._add(day, "projects")
+            self._add(day, f"ip:{ip}")
             return None
 
     def take_image(self) -> bool:
+        day = date.today().isoformat()
         with self._lock:
-            self._roll()
-            if self.images and self._counts.get("images", 0) >= self.images:
+            if self.images and self._count(day, "images") >= self.images:
                 return False
-            self._counts["images"] = self._counts.get("images", 0) + 1
+            self._add(day, "images")
             return True
 
 
@@ -149,7 +159,22 @@ class RevisionBody(BaseModel):
     requestId: str = Field(min_length=1, max_length=100)
 
 
-def create_app(store: Store, worker: Worker, public: bool = False, limits: Limits | None = None) -> FastAPI:
+def client_ip(request: Request, trust_proxy: bool) -> str:
+    """접속 주소. 호스팅의 프록시 뒤에서는 모든 요청이 프록시 주소로 보이므로, trust_proxy일 때만
+    프록시가 붙여 주는 헤더에서 실제 주소를 읽는다(프록시 없이 이 헤더를 믿으면 누구나 꾸밀 수 있다)."""
+    if trust_proxy:
+        for name in ("cf-connecting-ip", "true-client-ip"):
+            if request.headers.get(name):
+                return request.headers[name].strip()
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "?"
+
+
+def create_app(
+    store: Store, worker: Worker, public: bool = False, limits: Limits | None = None, trust_proxy: bool = False
+) -> FastAPI:
     """public이면 프로젝트 목록을 내주지 않는다(각 브라우저는 자기가 만든 프로젝트 ID만 기억한다)."""
     app = FastAPI(title="카드뉴스 에이전트")
     limits = limits or Limits()
@@ -222,7 +247,7 @@ def create_app(store: Store, worker: Worker, public: bool = False, limits: Limit
             raise ApiError(400, "invalid_request", "주제를 입력해 주세요.")
         saved = store.get_request("_global", body.requestId)
         if saved is None:
-            over = limits.take_project(request.client.host if request.client else "?")
+            over = limits.take_project(client_ip(request, trust_proxy))
             if over:
                 raise ApiError(429, "daily_limit", over, "내일 다시 해 주세요.")
 

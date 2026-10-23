@@ -1,6 +1,6 @@
 # 카드뉴스 에이전트
 
-주제를 입력하면 최근 소식을 조사하고, 사용자가 브라우저에서 소식을 고르고 질문에 답하고 기획을 승인하면, 그림과 글자를 얹은 카드뉴스 PNG·ZIP을 만들어 주는 웹앱입니다. 조사·원고·그림은 모두 **OpenAI API**로 합니다.
+주제를 입력하면 최근 소식을 조사하고, 사용자가 브라우저에서 소식을 고르고 질문에 답하고 기획을 승인하면, 그림과 글자를 얹은 카드뉴스 PNG·ZIP을 만들어 주는 웹앱입니다. 조사·원고·그림은 모두 **Google Gemini API**로 합니다(OpenAI는 옵션).
 
 | 문서 | 내용 |
 |---|---|
@@ -22,7 +22,7 @@
 필요한 것:
 
 - Python 3.11 이상, [uv](https://docs.astral.sh/uv/)
-- OpenAI API 키. 사용자 환경 변수 `OPENAI_API_KEY`에 넣어 두세요. 넣은 뒤에는 PowerShell 창을 새로 여세요.
+- **결제를 등록한** Gemini API 키([Google AI Studio](https://aistudio.google.com)에서 발급). 사용자 환경 변수 `GEMINI_API_KEY`에 넣어 두세요. 넣은 뒤에는 PowerShell 창을 새로 여세요. 무료 등급 키는 Gemini 3 모델의 Google 검색과 그림 생성이 안 됩니다.
 
 **1. 앱 서버용 PowerShell 창을 하나 열고 이 폴더로 이동합니다.**
 
@@ -46,7 +46,7 @@ uv run python -m cardnews
 아래처럼 나오면 켜진 것입니다.
 
 ```
-엔진: openai (gpt-5.4-mini) · 그림: openai · 저장 폴더: C:\aiffel_work\card-news\card-news-workflow-kit\data
+엔진: gemini (gemini-3.8-flash) · 그림: gemini · 저장 폴더: C:\aiffel_work\card-news\card-news-workflow-kit\data
 브라우저에서 http://127.0.0.1:8765 를 여세요. 끄려면 이 창에서 Ctrl+C
 ```
 
@@ -70,8 +70,10 @@ uv run python -m cardnews --engine mock
 
 1. [render.com](https://render.com)에 GitHub 계정으로 가입·로그인합니다.
 2. **New → Blueprint**를 누르고 이 저장소(`rome777/card-news-agent`)를 고릅니다.
-3. `OPENAI_API_KEY` 값을 물어보면 OpenAI 키를 넣고 **Apply**를 누릅니다. 첫 빌드는 10분 안팎 걸립니다.
-4. 끝나면 나오는 `https://card-news-agent-xxxx.onrender.com` 주소를 엽니다. GitHub `main`에 올릴 때마다 자동으로 다시 배포됩니다.
+3. `GEMINI_API_KEY`(필수)와 `CARDNEWS_UNLIMITED_IPS`(선택, 하루 1개 상한에서 빼 줄 내 IP)를 물어보면 넣고 **Apply**를 누릅니다. 첫 빌드는 10분 안팎 걸립니다.
+4. 끝나면 나오는 `https://….onrender.com` 주소를 엽니다. GitHub `main`에 올릴 때마다 자동으로 다시 배포됩니다.
+
+이미 만든 서비스에 새 환경 변수를 더할 때는 Render 대시보드 → 서비스 → **Environment**에서 추가하고 저장합니다(블루프린트는 처음 만들 때만 값을 물어봅니다).
 
 **무료 인스턴스의 한계(0.1 CPU, 메모리 512MB)**
 
@@ -92,13 +94,14 @@ curl -fsSLO https://raw.githubusercontent.com/rome777/card-news-agent/main/deplo
 bash setup-ubuntu.sh
 ```
 
-3. 처음에는 `.env`에 키가 없다고 멈춥니다. `nano ~/card-news-agent/.env`로 `OPENAI_API_KEY=` 뒤에 키를 넣고 `bash setup-ubuntu.sh`를 다시 실행합니다.
+3. 처음에는 `.env`에 키가 없다고 멈춥니다. `nano ~/card-news-agent/.env`로 `GEMINI_API_KEY=` 뒤에 키를 넣고 `bash setup-ubuntu.sh`를 다시 실행합니다.
 4. 브라우저에서 `http://<VM 공인 IP>/`를 엽니다. 코드를 고친 뒤 다시 배포할 때도 `bash setup-ubuntu.sh`를 실행하면 됩니다.
 
 **공개 모드(`--public`)에서 달라지는 것**
 
-- **접속 비밀번호:** 없습니다. 주소를 아는 누구나 쓸 수 있고, **모든 비용은 `.env`에 넣은 OpenAI 키의 계정으로 청구됩니다.** OpenAI 대시보드에서 월 예산 상한을 꼭 걸어 두세요.
-- **하루 사용량 상한:** 새 카드뉴스는 하루 30개, 접속 주소 하나당 5개, 그림은 하루 150장까지입니다. `docker-compose.yml`의 숫자를 바꾸거나 `0`으로 끌 수 있습니다. 서버를 다시 켜면 그날 숫자를 다시 셉니다.
+- **접속 비밀번호:** 없습니다. 주소를 아는 누구나 쓸 수 있고, **모든 비용은 서버에 넣은 Gemini 키의 계정으로 청구됩니다.** Google AI Studio·Cloud 결제 설정에서 예산 알림이나 상한을 꼭 걸어 두세요.
+- **하루 사용량 상한:** 카드뉴스는 **같은 접속 주소에서 하루 1번**, 서버 전체 하루 30개, 그림은 하루 150장까지입니다. 환경 변수 `CARDNEWS_UNLIMITED_IPS`에 적은 주소(쉼표로 구분)는 주소당 상한에서 빠집니다. 숫자는 `--ip-daily-project-limit` 등 실행 옵션으로 바꾸거나 `0`으로 끌 수 있습니다. 숫자는 앱의 저장소에 남아 서버를 다시 켜도 유지되지만, Render 무료처럼 디스크가 남지 않는 곳에서는 잠들거나 다시 배포하면 초기화됩니다.
+- **접속 주소 판단:** Render처럼 프록시 뒤에서는 `--trust-proxy`(Dockerfile 기본)로 프록시가 붙인 헤더에서 실제 주소를 읽습니다. 집 인터넷 IP는 바뀔 수 있으니, 제외 주소가 안 먹으면 IP를 다시 확인해 고치세요.
 - **프로젝트 목록:** 다른 사람의 프로젝트는 보이지 않습니다. 각 브라우저는 자기가 만든 프로젝트만 기억합니다.
 - **HTTPS:** 지금 설정은 HTTP(80번)입니다. 도메인이 있으면 앞에 Caddy·Nginx 같은 프록시를 두어 HTTPS를 붙이세요.
 
@@ -132,18 +135,20 @@ bash setup-ubuntu.sh
 | 넓은 조사 | 1~2분 | 입력 약 6만·출력 약 2만 토큰, 웹 검색 7회 안팎 |
 | 심층 조사(질문이 있으면 답한 뒤 한 번 더) | 30초~1분 | 입력 약 6만·출력 약 7천 토큰 |
 | 스토리보드 | 30~40초 | 입력 약 5천·출력 약 5천 토큰 |
-| 그림 | 장당 10~20초 | 장당 약 $0.034 (`gpt-image-1.5` medium) |
+| 그림 | 장당 10~20초 | Gemini `gemini-3.1-flash-image` 1K 장당 약 $0.067 |
 
-토큰 요금은 모델(기본 `gpt-5.4-mini`)과 OpenAI 요금표에 따릅니다. 카드뉴스 한 편(카드 6장)에 대략 0.5달러 안팎으로 추정합니다. 실제 청구액은 OpenAI 사용량 화면에서 확인하세요.
+위 시간·토큰은 OpenAI 엔진으로 잰 값입니다. Gemini 요금(2026-10 공식 요금표): `gemini-3.8-flash` 100만 토큰당 입력 $0.75·출력 $3.75(2026년 말까지), Google 검색은 Gemini 3 모델 합산 월 5,000회 무료 뒤 1,000회당 $14. 카드뉴스 한 편(카드 6장)에 대략 0.5달러 안팎으로 추정합니다. 실제 청구액은 Google AI Studio 사용량 화면에서 확인하세요.
 
 ## 실행 옵션
 
 | 옵션 | 뜻 |
 |---|---|
-| `--engine mock` | 모의 엔진(비용 없음). 기본은 `openai` |
-| `--openai-model`, `--openai-effort` | 조사·원고 모델과 reasoning effort. 기본 `gpt-5.4-mini`, `medium` |
-| `--images mock` | 그림만 모의로 만듭니다. 기본은 `openai`(mock 엔진이면 `mock`) |
-| `--openai-image-model`, `--openai-image-quality` | 그림 모델과 품질. 기본 `gpt-image-1.5`, `medium` |
+| `--engine mock` | 모의 엔진(비용 없음). 기본은 `gemini` |
+| `--gemini-model`, `--gemini-thinking` | 조사·원고 모델과 thinking level. 기본 `gemini-3.8-flash`, `medium` |
+| `--images mock` | 그림만 모의로 만듭니다. 기본은 `gemini`(mock 엔진이면 `mock`) |
+| `--gemini-image-model`, `--gemini-image-size` | 그림 모델과 크기. 기본 `gemini-3.1-flash-image`, `1K` |
+| `--engine openai`, `--images openai` | OpenAI로 바꿉니다(`OPENAI_API_KEY` 필요). `--openai-model`(기본 `gpt-5.4-mini`), `--openai-image-model`(기본 `gpt-image-1.5`) |
+| `--trust-proxy` | 프록시 뒤에서 실행할 때 접속 주소를 프록시 헤더에서 읽습니다(Render용 Dockerfile 기본) |
 | `--host 0.0.0.0` | 다른 컴퓨터에서도 접속하게 합니다(서버 배포용). 기본은 `127.0.0.1` |
 | `--public` | 공개 서버 모드(위 「서버에 배포하기」 참고). `--daily-project-limit`, `--ip-daily-project-limit`, `--daily-image-limit`로 상한을 바꿉니다 |
 | `--port 8766` | 다른 포트로 켭니다 |
@@ -157,8 +162,8 @@ bash setup-ubuntu.sh
 |---|---|
 | `cardnews/server.py` | 웹 API, 공개 모드의 하루 상한 |
 | `cardnews/worker.py` | 엔진·그림·렌더링을 웹 요청과 따로 실행하고 결과를 저장 |
-| `cardnews/engines/` | 실행 엔진(`openai_api.py` 기본, `claude_cli.py`, `mock.py`). 프롬프트와 결과 형식은 `claude_cli.py`에 있고 OpenAI 엔진이 같이 씀 |
-| `cardnews/images.py` | 그림 작업자(OpenAI, agy, 모의)와 그림 요청 문장 |
+| `cardnews/engines/` | 실행 엔진(`gemini_api.py` 기본, `openai_api.py`, `claude_cli.py`, `mock.py`). 프롬프트와 결과 형식은 `claude_cli.py`에 있고 다른 엔진이 같이 씀 |
+| `cardnews/images.py` | 그림 작업자(Gemini, OpenAI, agy, 모의)와 그림 요청 문장 |
 | `cardnews/render.py` | 카드 HTML → PNG, 잘림·겹침·대비 검사 |
 | `cardnews/exports.py` | 내보내기와 내보낸 파일 검증 |
 | `cardnews/procs.py` | claude·agy 프로세스 실행·취소·정리 |
@@ -171,7 +176,10 @@ bash setup-ubuntu.sh
 
 | 증상 | 할 일 |
 |---|---|
-| "OpenAI API 키(환경 변수 OPENAI_API_KEY)가 없습니다" | 환경 변수(서버면 `.env`)에 키를 넣고 서버를 다시 켭니다 |
+| "Gemini API 키(환경 변수 GEMINI_API_KEY)가 없습니다" / "키가 틀렸거나 권한이 없습니다" | 환경 변수(Render는 Environment 메뉴, VM은 `.env`)에 키를 넣고 서버를 다시 켭니다 |
+| "Gemini 계정의 결제 설정이나 사용 한도 때문에…" | Google AI Studio에서 그 키가 속한 프로젝트의 결제 등록·한도를 확인합니다 |
+| "카드뉴스는 같은 접속 주소에서 하루 1번까지…" | 공개 모드의 주소당 상한입니다. 운영자라면 `CARDNEWS_UNLIMITED_IPS`에 내 IP를 넣습니다 |
+| "OpenAI API 키(환경 변수 OPENAI_API_KEY)가 없습니다" | OpenAI 옵션을 쓸 때만 필요합니다 |
 | "OpenAI API 키가 틀렸거나 만료됐습니다" | 키를 확인해 다시 넣습니다(Render는 Environment 메뉴) |
 | "OpenAI 계정의 크레딧이나 지출 한도에 도달해…" | OpenAI 대시보드(Settings → Limits, Billing)에서 그 키가 속한 프로젝트의 지출 한도나 크레딧을 확인합니다. 바꾸기 전에는 다시 시도해도 같습니다 |
 | "OpenAI 안전 기준에 걸려 그림을 만들지 않았습니다" | 「글자 고치기」에서 그림 장면을 더 상징적으로 바꾸고 「그림 다시 만들기」를 누릅니다 |

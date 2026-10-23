@@ -1,4 +1,4 @@
-# VM에서: OPENAI_API_KEY를 .env에 넣고 `docker compose up -d --build`
+# VM에서: GEMINI_API_KEY를 .env에 넣고 `docker compose up -d --build`
 # 공개 모드: 접속 비밀번호는 없고, 하루 사용량 상한만 있다(숫자를 바꾸거나 0으로 끌 수 있다).
 services:
   cardnews:
@@ -24,6 +24,6 @@ services:
       - --daily-project-limit
       - "30"
       - --ip-daily-project-limit
-      - "5"
+      - "1"
       - --daily-image-limit
       - "150"
