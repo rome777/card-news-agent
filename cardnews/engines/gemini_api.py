@@ -17,6 +17,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from . import Cancelled, Emit, EngineError
@@ -98,7 +99,63 @@ class GeminiEngine(ClaudeCliEngine):
             f"Gemini 호출 끝 · 입력 {usage.get('total_input_tokens', '?')} / 출력 {usage.get('total_output_tokens', '?')} 토큰"
             f" · 검색 {usage.get('grounding_tool_count', state['searches'])}회"
         )
-        return {"data": data, "session_id": interaction.get("id"), "searches": state["searches"], "fetched": state["fetched"]}
+        # 검색 결과의 주소는 Google 중계 주소라 매체가 드러나지 않고 시간이 지나면 만료된다. 실제 기사 주소로 바꿔 둔다.
+        redirects = {u for u in _strings(data) | state["fetched"] if u.startswith(REDIRECT_PREFIX)}
+        resolved = resolve_redirects(redirects, cancel)
+        if redirects:
+            emit(f"출처 주소 {len(redirects)}개 중 {sum(resolved[u] != u for u in redirects)}개를 실제 기사 주소로 바꿈")
+        data = _replace_strings(data, resolved)
+        fetched = {_norm_url(resolved.get(u, u)) for u in state["fetched"]}
+        return {"data": data, "session_id": interaction.get("id"), "searches": state["searches"], "fetched": fetched}
+
+
+REDIRECT_PREFIX = "https://vertexaisearch.cloud.google.com/grounding-api-redirect/"
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+
+def resolve_redirects(urls: set[str], cancel: threading.Event) -> dict[str, str]:
+    """Google 중계 주소가 가리키는 실제 주소를 한 번만 따라가 읽는다. 읽지 못하면 원래 주소를 그대로 둔다."""
+    opener = urllib.request.build_opener(_NoRedirect)
+
+    def one(url: str) -> str:
+        if cancel.is_set():
+            return url
+        try:
+            opener.open(urllib.request.Request(url, method="HEAD"), timeout=10).close()
+        except urllib.error.HTTPError as e:
+            location = e.headers.get("Location") or ""
+            if e.code in (301, 302, 303, 307, 308) and location.startswith(("http://", "https://")):
+                return location
+        except Exception:
+            pass
+        return url
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return dict(zip(urls, pool.map(one, urls)))
+
+
+def _strings(node: Any) -> set[str]:
+    if isinstance(node, str):
+        return {node}
+    if isinstance(node, dict):
+        return set().union(*(_strings(v) for v in node.values())) if node else set()
+    if isinstance(node, list):
+        return set().union(*(_strings(v) for v in node)) if node else set()
+    return set()
+
+
+def _replace_strings(node: Any, mapping: dict[str, str]) -> Any:
+    if isinstance(node, str):
+        return mapping.get(node, node)
+    if isinstance(node, dict):
+        return {k: _replace_strings(v, mapping) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_replace_strings(v, mapping) for v in node]
+    return node
 
 
 def call_api(method: str, url: str, body: dict[str, Any] | None, cancel: threading.Event, timeout: float = 300) -> dict[str, Any]:
@@ -178,7 +235,8 @@ def _report_steps(interaction: dict[str, Any], state: dict[str, Any], emit: Emit
         elif kind == "url_context_result":
             for r in step.get("result") or []:
                 if r.get("status") == "success" and r.get("url"):
-                    state["fetched"].add(_norm_url(r["url"]))
+                    # 중계 주소는 대소문자를 구별하므로 그대로 두고, 실제 주소로 바꾼 뒤에 정규화한다
+                    state["fetched"].add(r["url"])
                 elif r.get("url"):
                     emit(f"원문을 읽지 못함({r.get('status')}): {r['url']}")
     state["seen"] = len(steps)
