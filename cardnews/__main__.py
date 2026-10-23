@@ -32,7 +32,7 @@ def main() -> int:
     )
     parser.add_argument("--openai-image-model", default="gpt-image-1.5", help="--images openai일 때 모델 (기본: gpt-image-1.5)")
     parser.add_argument("--openai-image-quality", choices=["low", "medium", "high"], default="medium", help="--images openai일 때 품질 (기본: medium)")
-    parser.add_argument("--public", action="store_true", help="공개 서버 모드: 다른 사람의 프로젝트 목록을 보여 주지 않고 하루 사용량 상한을 건다")
+    parser.add_argument("--public", action="store_true", help="공개 서버 모드: 하루 사용량 상한을 건다(프로젝트 목록은 모두에게 보인다)")
     parser.add_argument("--daily-project-limit", type=int, default=30, help="공개 모드에서 하루에 새로 만들 수 있는 프로젝트 수 (0이면 제한 없음)")
     parser.add_argument("--ip-daily-project-limit", type=int, default=1, help="공개 모드에서 접속 주소 하나가 하루에 만들 수 있는 프로젝트 수 (기본 1, 0이면 제한 없음)")
     parser.add_argument("--trust-proxy", action="store_true", help="호스팅 프록시 뒤에서 실행할 때: 접속 주소를 프록시가 붙인 헤더(X-Forwarded-For 등)에서 읽는다")

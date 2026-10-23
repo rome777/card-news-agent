@@ -131,7 +131,7 @@ ID는 프로젝트 범위에서 구분합니다(프로젝트 만들기는 전체
 | 요청 | 입력 | 응답 |
 |---|---|---|
 | `GET /api/config` | — | `{ engine, mock, images, public }` (`engine`: gemini·openai·claude·mock, `images`: gemini·openai·agy·mock) |
-| `GET /api/projects` | — | `{ projects: [{ id, topic, stage, status, updated_at, mock, engine }] }` (최근에 바뀐 순). **공개 모드에서는 빈 목록** — 화면이 브라우저에 기억한 자기 프로젝트 ID로 하나씩 불러옴 |
+| `GET /api/projects` | — | `{ projects: [{ id, topic, stage, status, updated_at, mock, engine }] }` (최근에 바뀐 순). 공개 모드에서도 이 서비스에서 만든 모든 프로젝트 |
 | `POST /api/projects` | `topic`(1~100자), `periodDays`(1~30, 기본 7), `requestId` | `{ projectId }`. 조사는 시작하지 않음. 공개 모드에서 하루 상한(전체 30개, 접속 주소당 1개)을 넘으면 `429 daily_limit`. 환경 변수 `CARDNEWS_UNLIMITED_IPS`의 주소는 주소당 상한에서 빠짐. `--trust-proxy`면 접속 주소를 `CF-Connecting-IP`·`True-Client-IP`·`X-Forwarded-For` 첫 값 순으로 읽음. 같은 `requestId` 재전송은 세지 않고, 센 숫자는 SQLite `usage` 표에 남음 |
 | `GET /api/projects/{id}` | — | `{ project, runs }` (아래 「프로젝트 문서」, runs는 최근 5개) |
 | `POST /api/projects/{id}/research` | `requestId`, `periodDays`(선택: 바꿔서 다시 조사) | `{ runId, status, alreadyRunning }`. 후보를 고른 뒤에는 `409 invalid_stage`. 조사 중이면 새로 시작하지 않고 진행 중인 run을 돌려줌 |

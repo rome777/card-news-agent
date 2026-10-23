@@ -117,25 +117,11 @@ async function refresh(force = false) {
 
 // ---------- 첫 화면
 
-// 공개 서버는 남의 프로젝트 목록을 주지 않는다. 이 브라우저에서 만든 프로젝트 ID만 기억해 둔다.
-const MY_KEY = "cardnews.myProjects";
-function myProjectIds() {
-  try { return JSON.parse(localStorage.getItem(MY_KEY) || "[]"); } catch { return []; }
-}
-function rememberProject(id) {
-  try { localStorage.setItem(MY_KEY, JSON.stringify([id, ...myProjectIds().filter((x) => x !== id)].slice(0, 50))); } catch { /* 저장 못 해도 진행 */ }
-}
-
 async function renderHome() {
   let projects = [];
   let listError = "";
   try {
-    if (S.config?.public) {
-      const found = await Promise.all(myProjectIds().map((id) => api("GET", `/api/projects/${id}`).then((d) => d.project).catch(() => null)));
-      projects = found.filter(Boolean);
-    } else {
-      projects = (await api("GET", "/api/projects")).projects;
-    }
+    projects = (await api("GET", "/api/projects")).projects;
   } catch (e) {
     listError = e.message;
   }
@@ -154,7 +140,7 @@ async function renderHome() {
       </form>
     </section>
     <section class="card">
-      <h2>${S.config?.public ? "이 브라우저에서 만든 프로젝트" : "프로젝트"}</h2>
+      <h2>${S.config?.public ? "모든 프로젝트" : "프로젝트"}</h2>
       ${listError ? `<p class="err">${esc(listError)}</p>` : ""}
       ${projects.length
         ? `<ul class="plist">${projects.map((p) => `
@@ -178,7 +164,6 @@ async function renderHome() {
       const topic = form.topic.value.trim();
       const periodDays = Number(form.period.value);
       const { projectId } = await api("POST", "/api/projects", { topic, periodDays, requestId: createId });
-      rememberProject(projectId);
       await api("POST", `/api/projects/${projectId}/research`, { requestId: rid() });
       location.hash = `#/p/${projectId}`;
     } catch (e) {

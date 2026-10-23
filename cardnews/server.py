@@ -175,7 +175,7 @@ def client_ip(request: Request, trust_proxy: bool) -> str:
 def create_app(
     store: Store, worker: Worker, public: bool = False, limits: Limits | None = None, trust_proxy: bool = False
 ) -> FastAPI:
-    """public이면 프로젝트 목록을 내주지 않는다(각 브라우저는 자기가 만든 프로젝트 ID만 기억한다)."""
+    """public이면 하루 사용량 상한을 건다."""
     app = FastAPI(title="카드뉴스 에이전트")
     limits = limits or Limits()
     engine = worker.engine
@@ -234,9 +234,7 @@ def create_app(
 
     @app.get("/api/projects")
     def list_projects() -> dict[str, Any]:
-        if public:
-            # 공개 서버에서는 남의 프로젝트를 보여 주지 않는다
-            return {"projects": [], "public": True}
+        # 공개 서버에서도 이 서비스에서 만든 모든 프로젝트를 보여 준다(사용자 결정)
         keys = ("id", "topic", "stage", "status", "updated_at", "mock", "engine")
         return {"projects": [{k: p.get(k) for k in keys} for p in store.list_projects()]}
 
