@@ -14,14 +14,15 @@
 주제에 「프랑스 시위」 한 마디만 적고, 이 사이트에서 실제로 만든 카드 7장이에요. (2026년 10월 23일)
 옆으로 밀어서 넘겨 보세요. 누르면 크게 보여요.
 
+<!-- 칸마다 줄바꿈 없는 공백 줄을 넣어 칸이 그림 폭 아래로 줄지 않게 한다. 그래야 GitHub에서 표가 가로로 스크롤된다. -->
 <table><tr>
-<td><a href="docs/example/card1.jpg"><img src="docs/example/card1.jpg" width="240" alt="1. 루브르 닫고 군대 투입 — 프랑스 폭발 직전인가"></a></td>
-<td><a href="docs/example/card2.jpg"><img src="docs/example/card2.jpg" width="240" alt="2. '물가 감당 못 하겠다' — 거리 덮친 80만의 분노"></a></td>
-<td><a href="docs/example/card3.jpg"><img src="docs/example/card3.jpg" width="240" alt="3. 1,800명 체포된 그날 — 불타고 부서진 파리 도심"></a></td>
-<td><a href="docs/example/card4.jpg"><img src="docs/example/card4.jpg" width="240" alt="4. 장갑차 배치·군대 투입 — 정부의 사상 초유 강경책"></a></td>
-<td><a href="docs/example/card5.jpg"><img src="docs/example/card5.jpg" width="240" alt="5. '정부 허가 없인 불법' — 시위 금지령에 들끓는 반발"></a></td>
-<td><a href="docs/example/card6.jpg"><img src="docs/example/card6.jpg" width="240" alt="6. 루브르 닫고 역 24곳 폐쇄 — 멈춰 서는 낭만의 도시"></a></td>
-<td><a href="docs/example/card7.jpg"><img src="docs/example/card7.jpg" width="240" alt="7. 24일 '2차 대격돌' 예고 — 파리 방문자 비상경계"></a></td>
+<td><a href="docs/example/card1.jpg"><img src="docs/example/card1.jpg" width="240" alt="1. 루브르 닫고 군대 투입 — 프랑스 폭발 직전인가"></a><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td><a href="docs/example/card2.jpg"><img src="docs/example/card2.jpg" width="240" alt="2. '물가 감당 못 하겠다' — 거리 덮친 80만의 분노"></a><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td><a href="docs/example/card3.jpg"><img src="docs/example/card3.jpg" width="240" alt="3. 1,800명 체포된 그날 — 불타고 부서진 파리 도심"></a><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td><a href="docs/example/card4.jpg"><img src="docs/example/card4.jpg" width="240" alt="4. 장갑차 배치·군대 투입 — 정부의 사상 초유 강경책"></a><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td><a href="docs/example/card5.jpg"><img src="docs/example/card5.jpg" width="240" alt="5. '정부 허가 없인 불법' — 시위 금지령에 들끓는 반발"></a><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td><a href="docs/example/card6.jpg"><img src="docs/example/card6.jpg" width="240" alt="6. 루브르 닫고 역 24곳 폐쇄 — 멈춰 서는 낭만의 도시"></a><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td><a href="docs/example/card7.jpg"><img src="docs/example/card7.jpg" width="240" alt="7. 24일 '2차 대격돌' 예고 — 파리 방문자 비상경계"></a><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
 </tr></table>
 
 ## 이렇게 써요
