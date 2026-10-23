@@ -186,6 +186,9 @@ def call_api(method: str, url: str, body: dict[str, Any] | None, cancel: threadi
     if "http" in box:
         raise classify(*box["http"])
     if "exc" in box:
+        exc = box["exc"]
+        if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError):
+            raise EngineError("timeout", f"Gemini 응답이 {int(timeout)}초 안에 오지 않았습니다.", "‘다시 시도’를 누르세요.")
         raise EngineError("engine_failed", f"Gemini에 연결하지 못했습니다: {box['exc']}", "인터넷 연결을 확인하고 ‘다시 시도’를 누르세요.")
     return box["data"]
 

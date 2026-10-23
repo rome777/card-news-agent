@@ -92,12 +92,13 @@ html, body {{ width: {CARD_W}px; height: {CARD_H}px; background: {background}; }
 .footer {{ flex: none; display: flex; gap: 20px; justify-content: space-between; align-items: flex-end; font-size: 24px; color: #ffffff; }}
 .footer > div {{ background: rgba(0,0,0,0.62); padding: 10px 16px; border-radius: 12px; line-height: 1.4; }}
 .src {{ max-width: 780px; max-height: 110px; overflow: hidden; }}
-.meta {{ white-space: nowrap; text-align: right; }}
+.meta, .nb {{ white-space: nowrap; }}
+.meta {{ text-align: right; }}
 </style></head>
 <body><div class="card">
 {blocks}
 <div class="footer">
-  <div class="src" data-check="source">{_text(card.get('source_line', ''))}</div>
+  <div class="src" data-check="source">{_source_text(card.get('source_line', ''))}</div>
   <div class="meta">{badge + '<br>' if badge else ''}{index} / {total}</div>
 </div>
 </div></body></html>"""
@@ -207,6 +208,14 @@ svg{{width:{size}px;height:{size}px;display:block}}</style></head><body>{clean}<
 
 def _text(s: str) -> str:
     return html.escape(s or "").replace("\n", "<br>")
+
+
+# 날짜(2026-10-23)는 하이픈에서 줄이 바뀌지 않게, '조사 기준 날짜'는 한 덩어리로 둔다
+DATE_PHRASE_RE = re.compile(r"(?:조사 기준 )?\d{4}-\d{2}-\d{2}")
+
+
+def _source_text(s: str) -> str:
+    return DATE_PHRASE_RE.sub(lambda m: f'<span class="nb">{m.group(0)}</span>', _text(s))
 
 
 

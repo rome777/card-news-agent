@@ -46,7 +46,7 @@ def build_prompt(scene: str, visual: dict[str, Any], position: str, tool: str = 
         "장소를 나타내야 하면 주제 속 장소의 알아볼 수 있는 상징만 쓴다(예: 프랑스라면 에펠탑·센강·프랑스 삼색기). "
         "흐림·빛 번짐(glow)·그라데이션·비네팅·부드러운 그림자 효과 없이, 선명한 단색 면과 또렷한 윤곽선으로만 그린다. "
         "바탕은 무늬 없는 한 가지 색으로 하고, 그림 요소는 가운데에 모아 가장자리에 바탕색 여백을 둔다. "
-        "이미지 안에 글자·숫자·로고·구호는 넣지 않는다. 정사각형."
+        "이미지 안에 글자·숫자·로고·구호는 넣지 않는다. 책 표지·달력·표지판·피켓·현수막·차량도 글자 없는 빈 면으로 그린다. 정사각형."
     )
     if tool == "agy":
         return f"내장 generate_image 도구로 다음 그림을 만들어 줘. {describe} 만든 이미지 파일의 실제 저장 경로를 알려 줘."
@@ -250,7 +250,14 @@ class GeminiImageMaker:
             "input": [{"type": "text", "text": prompt}],
             "response_format": {"type": "image", "aspect_ratio": "1:1", "image_size": self.size, "mime_type": "image/jpeg"},
         }
-        interaction = call_api("POST", BASE_URL, body, cancel, timeout=240)
+        # 보통 15초 안에 오므로 90초에 끊고, 응답이 멈춘 경우만 한 번 더 요청한다
+        try:
+            interaction = call_api("POST", BASE_URL, body, cancel, timeout=90)
+        except EngineError as e:
+            if e.code != "timeout":
+                raise
+            emit("Gemini 응답이 90초 동안 없어 한 번 더 요청합니다.")
+            interaction = call_api("POST", BASE_URL, body, cancel, timeout=90)
         deadline = time.monotonic() + 5 * 60
         while interaction.get("status") == "in_progress" and interaction.get("id"):
             if time.monotonic() > deadline:
